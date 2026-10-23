@@ -403,10 +403,6 @@ def _screen_rules_from_json(json) -> tuple[list[GameScreen], list[TimeRule], Map
             for priority in parse_with_priority(rule_json):
                 screen_rules[priority][rule_json["kind"]] = rule_json["seconds"]
 
-    if not len(screen_rules[0]):
-        raise ValueError(
-            "Invalid screens config! Add at least one with with 'with_priority=0' for when no games are available."
-        )
 
     for t in time_rules:
         has_matching_screen = False

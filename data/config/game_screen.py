@@ -1,3 +1,4 @@
+import datetime
 from enum import Enum
 from typing import Optional
 
@@ -26,9 +27,22 @@ class Requirements(Enum):
         game_status = game["status"]
         match self:
             case Requirements.PREGAME:
-                return status.is_pregame(game_status)
+                if not status.is_pregame(game_status):
+                    return False
+                game_time_str = game.get("game_datetime", "")
+                if not game_time_str:
+                    return True
+                game_time = datetime.datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
+                now = datetime.datetime.now(datetime.timezone.utc)
+                return (game_time - now) <= datetime.timedelta(minutes=30)
             case Requirements.GAME_OVER:
-                return status.is_complete(game_status)
+                if not status.is_complete(game_status):
+                    return False
+                completion_time = game.get("completion_time")
+                if completion_time is None:
+                    return False
+                elapsed = (datetime.datetime.now(datetime.timezone.utc) - completion_time).total_seconds()
+                return elapsed < 15 * 60
             case Requirements.LIVE:
                 return status.is_fresh(game_status) or status.is_live(game_status)
             case Requirements.LIVE_IN_INNING:

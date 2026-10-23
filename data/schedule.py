@@ -7,6 +7,7 @@ from math import ceil
 import statsapi
 
 from bullpen.logging import LOGGER
+from data import status as game_status_module
 from data.game import Game
 from bullpen.api import UpdateStatus
 from data.utils.circular_queue import CircularQueue
@@ -28,6 +29,7 @@ class Schedule:
         # the (filtered) schedule
         self._games: list[dict[str, Any]] = []
         self.priority = 0
+        self._game_completion_times: dict[int, datetime.datetime] = {}
         self.update(True)
 
     def update(self, force=False) -> UpdateStatus:
@@ -111,6 +113,13 @@ class Schedule:
             priority = rule.matches(datetime.datetime.now())
             if priority:
                 highest = max(highest, priority)
+
+        for game in all_games:
+            game_id = game["game_id"]
+            if game_status_module.is_complete(game["status"]):
+                if game_id not in self._game_completion_times:
+                    self._game_completion_times[game_id] = datetime.datetime.now(datetime.timezone.utc)
+                game["completion_time"] = self._game_completion_times[game_id]
 
         for game in all_games:
             seen = set()
